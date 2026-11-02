@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.js";
 import Avatar from "../components/Avatar.jsx";
 import StageBadge from "../components/StageBadge.jsx";
+import BackLink from "../components/BackLink.jsx";
+import Select from "../components/Select.jsx";
 import SummaryPanel from "../components/SummaryPanel.jsx";
 import { useToast } from "../components/toastContext.js";
 import { STAGES, formatDateTime } from "../constants.js";
@@ -114,7 +116,7 @@ export default function CandidateDetail() {
         <p className="alert error" role="alert">
           {error}
         </p>
-        <Link to="/">← All candidates</Link>
+        <BackLink to="/">Back to candidates</BackLink>
       </>
     );
   }
@@ -123,9 +125,7 @@ export default function CandidateDetail() {
   const c = candidate;
   return (
     <>
-      <p className="breadcrumb">
-        <Link to="/">← All candidates</Link>
-      </p>
+      <BackLink to="/">Back to candidates</BackLink>
 
       <div className="page-heading">
         <div className="title-with-avatar">
@@ -177,20 +177,14 @@ export default function CandidateDetail() {
           <section className="card" aria-labelledby="profile-heading">
             <h2 id="profile-heading">Profile</h2>
             <div className="field stage-field">
-              <label htmlFor="stage">Stage</label>
               <div className="inline">
-                <span className="select">
-                  <select
-                    id="stage"
-                    value={c.stage}
-                    disabled={Boolean(busy)}
-                    onChange={(e) => run("stage", () => api.changeStage(id, e.target.value), `Moved to ${e.target.value}`)}
-                  >
-                    {STAGES.map((stage) => (
-                      <option key={stage}>{stage}</option>
-                    ))}
-                  </select>
-                </span>
+                <Select
+                  label="Stage"
+                  value={c.stage}
+                  options={STAGES.map((stage) => ({ value: stage, label: stage }))}
+                  disabled={Boolean(busy)}
+                  onChange={(stage) => run("stage", () => api.changeStage(id, stage), `Moved to ${stage}`)}
+                />
                 <StageBadge stage={c.stage} />
                 {busy === "stage" && <span className="muted small">Saving…</span>}
               </div>

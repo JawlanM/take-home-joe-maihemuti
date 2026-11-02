@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api.js";
+import BackLink from "../components/BackLink.jsx";
+import Select from "../components/Select.jsx";
 import TextFileField from "../components/TextFileField.jsx";
 import { useToast } from "../components/toastContext.js";
 import { STAGES } from "../constants.js";
@@ -101,9 +103,9 @@ export default function CandidateForm() {
 
   return (
     <>
-      <p className="breadcrumb">
-        <Link to={isEdit ? `/candidates/${id}` : "/"}>← {isEdit ? "Back to candidate" : "All candidates"}</Link>
-      </p>
+      <BackLink to={isEdit ? `/candidates/${id}` : "/"}>
+        {isEdit ? "Back to candidate" : "Back to candidates"}
+      </BackLink>
       <h1>{isEdit ? "Edit candidate" : "Add candidate"}</h1>
 
       {error && (
@@ -117,23 +119,29 @@ export default function CandidateForm() {
           <TextField label="Name" name="name" value={values.name} onChange={handleChange} error={fieldErrors.name} required autoComplete="off" />
           <TextField label="Email" name="email" type="email" value={values.email} onChange={handleChange} error={fieldErrors.email} required autoComplete="off" />
           <TextField label="Phone" name="phone" type="tel" value={values.phone} onChange={handleChange} error={fieldErrors.phone} autoComplete="off" />
-          <TextField label="Role applied for" name="role" value={values.role} onChange={handleChange} error={fieldErrors.role} required list="role-options" autoComplete="off" />
-          <datalist id="role-options">
-            {roles.map((role) => (
-              <option key={role} value={role} />
-            ))}
-          </datalist>
+          <div>
+            <TextField label="Role applied for" name="role" value={values.role} onChange={handleChange} error={fieldErrors.role} required autoComplete="off" />
+            {roles.length > 0 && (
+              <div className="role-suggestions" aria-label="Existing roles">
+                {roles
+                  .filter((role) => role !== values.role)
+                  .map((role) => (
+                    <button key={role} type="button" className="chip-button" onClick={() => handleChange("role", role)}>
+                      {role}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
           <TextField label="Source" name="source" value={values.source} onChange={handleChange} error={fieldErrors.source} placeholder="e.g. LinkedIn, referral" autoComplete="off" />
           {!isEdit && (
             <div className="field">
-              <label htmlFor="stage">Stage</label>
-              <span className="select">
-                <select id="stage" value={values.stage} onChange={(e) => handleChange("stage", e.target.value)}>
-                  {STAGES.map((stage) => (
-                    <option key={stage}>{stage}</option>
-                  ))}
-                </select>
-              </span>
+              <Select
+                label="Stage"
+                value={values.stage}
+                options={STAGES.map((stage) => ({ value: stage, label: stage }))}
+                onChange={(stage) => handleChange("stage", stage)}
+              />
             </div>
           )}
         </fieldset>
@@ -145,7 +153,7 @@ export default function CandidateForm() {
             value={values.resume_text}
             onChange={handleChange}
             error={fieldErrors.resume_text}
-            hint="Paste the text or load a .txt file. Used for the AI summary."
+            hint="Used for the AI summary."
           />
           <TextFileField
             label="Cover letter (optional)"

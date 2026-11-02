@@ -8,11 +8,13 @@ const MAX_FILE_BYTES = 200 * 1024;
 export default function TextFileField({ label, name, value, onChange, error, hint }) {
   const id = useId();
   const [fileError, setFileError] = useState("");
+  const [loadedFile, setLoadedFile] = useState("");
 
   function handleFile(event) {
     const file = event.target.files?.[0];
     event.target.value = ""; // allow re-selecting the same file
     setFileError("");
+    setLoadedFile("");
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".txt")) {
       setFileError("Only .txt files are supported.");
@@ -24,7 +26,10 @@ export default function TextFileField({ label, name, value, onChange, error, hin
     }
     file
       .text()
-      .then((text) => onChange(name, text))
+      .then((text) => {
+        onChange(name, text);
+        setLoadedFile(`${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB) uploaded`);
+      })
       .catch(() => setFileError("Couldn't read that file."));
   }
 
@@ -33,12 +38,15 @@ export default function TextFileField({ label, name, value, onChange, error, hin
     <div className="field">
       <div className="field-label-row">
         <label htmlFor={id}>{label}</label>
-        <label className="button small">
-          Load .txt file
+        <label className="button small upload-button">
+          <span className="upload-icon" aria-hidden="true" />
+          Upload .txt from computer
           <input type="file" accept=".txt,text/plain" onChange={handleFile} className="visually-hidden" />
         </label>
       </div>
-      {hint && <p className="hint">{hint}</p>}
+      <p className="hint">
+        {hint ? `${hint} ` : ""}Paste text below, or upload a .txt file (up to 200 KB).
+      </p>
       <textarea
         id={id}
         name={name}
@@ -48,6 +56,11 @@ export default function TextFileField({ label, name, value, onChange, error, hin
         aria-invalid={Boolean(message)}
       />
       {message && <p className="field-error">{message}</p>}
+      {!message && loadedFile && (
+        <p className="field-success" role="status">
+          {loadedFile}
+        </p>
+      )}
     </div>
   );
 }

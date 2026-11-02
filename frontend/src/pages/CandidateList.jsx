@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api.js";
 import Avatar from "../components/Avatar.jsx";
 import SegmentedControl from "../components/SegmentedControl.jsx";
+import Select from "../components/Select.jsx";
 import StageBadge from "../components/StageBadge.jsx";
 import { STAGES, formatDate } from "../constants.js";
 
@@ -42,19 +43,6 @@ function EmptyState({ title, message, children }) {
       <p className="muted">{message}</p>
       {children}
     </div>
-  );
-}
-
-function FilterSelect({ label, value, onChange, children }) {
-  return (
-    <label>
-      {label}
-      <span className="select">
-        <select value={value} onChange={(e) => onChange(e.target.value)}>
-          {children}
-        </select>
-      </span>
-    </label>
   );
 }
 
@@ -150,26 +138,43 @@ export default function CandidateList() {
           value={filters.archived}
           onChange={(archived) => updateFilters({ archived })}
         />
-        <FilterSelect label="Stage" value={filters.stage} onChange={(stage) => updateFilters({ stage })}>
-          <option value="">All stages</option>
-          {STAGES.map((stage) => (
-            <option key={stage}>{stage}</option>
-          ))}
-        </FilterSelect>
-        <FilterSelect label="Role" value={filters.role} onChange={(role) => updateFilters({ role })}>
-          <option value="">All roles</option>
-          {roles.map((role) => (
-            <option key={role}>{role}</option>
-          ))}
-        </FilterSelect>
-        <FilterSelect label="Sort by" value={filters.sort} onChange={(sort) => updateFilters({ sort })}>
-          <option value="created">Date added</option>
-          <option value="stage">Stage</option>
-        </FilterSelect>
-        <FilterSelect label="Order" value={filters.order} onChange={(order) => updateFilters({ order })}>
-          <option value="desc">{filters.sort === "stage" ? "Rejected first" : "Newest first"}</option>
-          <option value="asc">{filters.sort === "stage" ? "Applied first" : "Oldest first"}</option>
-        </FilterSelect>
+        <Select
+          label="Stage"
+          value={filters.stage}
+          options={[{ value: "", label: "All stages" }, ...STAGES.map((stage) => ({ value: stage, label: stage }))]}
+          onChange={(stage) => updateFilters({ stage })}
+        />
+        <Select
+          label="Role"
+          value={filters.role}
+          options={[{ value: "", label: "All roles" }, ...roles.map((role) => ({ value: role, label: role }))]}
+          onChange={(role) => updateFilters({ role })}
+        />
+        <Select
+          label="Sort by"
+          value={filters.sort}
+          options={[
+            { value: "created", label: "Date added" },
+            { value: "stage", label: "Stage" },
+          ]}
+          onChange={(sort) => updateFilters({ sort })}
+        />
+        <Select
+          label="Order"
+          value={filters.order}
+          options={
+            filters.sort === "stage"
+              ? [
+                  { value: "asc", label: "Applied first" },
+                  { value: "desc", label: "Rejected first" },
+                ]
+              : [
+                  { value: "desc", label: "Newest first" },
+                  { value: "asc", label: "Oldest first" },
+                ]
+          }
+          onChange={(order) => updateFilters({ order })}
+        />
       </form>
 
       {error && (
