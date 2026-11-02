@@ -89,8 +89,15 @@ and check the injected claims don't appear and the warning flag is set.
 ## What I'd build next
 
 1. **Authentication and roles** (Identity-Aware Proxy first, then per-user audit of notes and stage changes).
-2. **Background summary generation** with a queue and automatic retry on rate limits.
-3. **PDF/DOCX resume upload**, with text extraction kept on the server.
+2. **PDF and DOCX upload, including scanned PDFs.** Extract text on the server. Some PDFs have no
+   text layer (scans, or pages saved as images), so extraction returns nothing; I've hit this
+   before. Detect the empty result, fall back to OCR (Google Document AI or Tesseract), and tell
+   the recruiter when a file still can't be read instead of summarising nothing.
+3. **Background summary generation** with a queue and automatic retry on rate limits.
 4. **Job-description matching:** compare each candidate against the role's requirements, with the same grounding rules.
-5. **Talent pool and retention:** keep archived candidates who consent for future roles, and auto-delete the rest after a retention period.
-6. Pagination and server-side search once the list grows.
+5. **Talent pool and data retention, with consent.** Candidates who opt in stay in a talent pool
+   and are flagged when a matching role opens; other archived candidates are auto-deleted after
+   a retention period; permanent delete gets a short undo window first.
+6. **Pipeline board:** a kanban view with drag between stages, stage counts, bulk move/reject,
+   and "days in stage".
+7. Search and pagination once the list grows.
