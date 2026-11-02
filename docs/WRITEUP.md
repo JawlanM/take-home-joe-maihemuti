@@ -83,8 +83,8 @@ and check the injected claims don't appear and the warning flag is set.
   store a stage rank and sort and paginate in MongoDB.
 - Skill grounding is a **literal substring match**, so "Node.js" vs "NodeJS" would be dropped.
   I preferred dropping a real skill over showing an invented one.
-- The Gemini free tier allows ~5 requests per minute; bulk loads are paced, and the app
-  degrades to "failed + Regenerate" rather than erroring.
+- The Gemini free tier allows ~5 requests per minute and ~20 per day; bulk loads are paced,
+  and when a limit is hit the app degrades to "failed + Regenerate" rather than erroring.
 
 ## What I'd build next
 

@@ -31,3 +31,6 @@ support/
 
 # Local screenshots
 /Screenshot*.png
+
+# Real resume used for local testing only (never commit)
+.local-seed/

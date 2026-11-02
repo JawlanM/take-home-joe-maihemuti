@@ -32,8 +32,9 @@ http://localhost:8000/docs).
 
 **No Gemini key?** Everything still works; summaries show as "AI summaries are turned off".
 A free key is available from [Google AI Studio](https://aistudio.google.com/apikey). The
-free tier allows about 5 requests per minute, so the seed loader pauses between candidates
-(about 2 minutes for all 10).
+free tier allows about 5 requests per minute and about 20 per day, so the seed loader
+pauses between candidates (about 2 minutes for all 10; 9 of them call Gemini). If a limit
+is hit, the candidate is still saved and the summary shows "Regenerate".
 
 ## Run it without Docker
 
