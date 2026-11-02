@@ -62,6 +62,8 @@
 body {
   margin: 0;
   background: var(--surface-canvas);
+  /* Scales every px-based size (type, spacing, controls) by 10% in one place. */
+  zoom: 1.1;
 }
 
 a {
