@@ -101,7 +101,7 @@ unknown id).
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/candidates?stage=&role=&sort=created\|stage&order=asc\|desc&include_archived=false` | List with filters and sort |
+| GET | `/candidates?stage=&role=&sort=created\|stage&order=asc\|desc&archived=active\|archived\|all` | List with filters and sort |
 | POST | `/candidates` | Create; generates summary before responding |
 | GET | `/candidates/{id}` | Full detail incl. notes and summary |
 | PATCH | `/candidates/{id}` | Edit profile fields; regenerates summary **only if** resume or cover letter changed (editing name/phone etc. never calls Gemini) |

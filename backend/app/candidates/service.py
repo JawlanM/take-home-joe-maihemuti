@@ -49,8 +49,8 @@ class CandidateService:
             mongo_filter["stage"] = query.stage.value
         if query.role:
             mongo_filter["role"] = query.role
-        if not query.include_archived:
-            mongo_filter["archived"] = False
+        if query.archived != "all":
+            mongo_filter["archived"] = query.archived == "archived"
 
         docs = self.repo.find(mongo_filter)
         descending = query.order == "desc"

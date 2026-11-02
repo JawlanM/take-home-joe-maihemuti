@@ -170,16 +170,26 @@ def test_regenerate_endpoint(client, make_candidate, summariser):
 # --- archive & delete ------------------------------------------------------
 
 
-def test_archived_hidden_by_default_and_shown_on_request(client, make_candidate):
+def test_archived_hidden_by_default_and_viewable_separately(client, make_candidate):
     make_candidate(name="Active")
     gone = make_candidate(name="Archived")
     r = client.post(f"/api/candidates/{gone['id']}/archive")
     assert r.json()["archived"] is True and r.json()["archived_at"]
 
     assert names(client.get("/api/candidates")) == ["Active"]
-    assert sorted(names(client.get("/api/candidates?include_archived=true"))) == ["Active", "Archived"]
+    assert names(client.get("/api/candidates?archived=archived")) == ["Archived"]
+    assert sorted(names(client.get("/api/candidates?archived=all"))) == ["Active", "Archived"]
     # Archived candidate is still readable (data kept)
     assert client.get(f"/api/candidates/{gone['id']}").status_code == 200
+
+
+def test_archived_view_is_empty_when_nothing_is_archived(client, make_candidate):
+    make_candidate()
+    assert client.get("/api/candidates?archived=archived").json() == []
+
+
+def test_invalid_archived_filter_rejected(client):
+    assert client.get("/api/candidates?archived=yes").status_code == 422
 
 
 def test_unarchive_restores(client, make_candidate):

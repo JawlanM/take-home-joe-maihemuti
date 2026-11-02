@@ -31,7 +31,8 @@ class ListQuery(BaseModel):
 
     stage: Stage | None = None
     role: str | None = None
-    include_archived: bool = False
+    # active = not archived (default), archived = only archived, all = both
+    archived: Literal["active", "archived", "all"] = "active"
     sort: Literal["created", "stage"] = "created"
     order: Literal["asc", "desc"] = "desc"
 

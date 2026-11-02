@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import Avatar from "../components/Avatar.jsx";
 import StageBadge from "../components/StageBadge.jsx";
 import SummaryPanel from "../components/SummaryPanel.jsx";
+import { useToast } from "../components/toastContext.js";
 import { STAGES, formatDateTime } from "../constants.js";
 
 function Notes({ notes, onAdd }) {
@@ -69,6 +70,7 @@ export default function CandidateDetail() {
   const [candidate, setCandidate] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(""); // which action is in progress, if any
+  const showToast = useToast();
 
   useEffect(() => {
     api
@@ -77,13 +79,15 @@ export default function CandidateDetail() {
       .catch((err) => setError(err.message));
   }, [id]);
 
-  // Run an action that returns the updated candidate, tracking busy/error state.
-  async function run(action, fn) {
+  // Run an action that returns the updated candidate, tracking busy/error state,
+  // then confirm it with a toast. `message` can be a string or a function of the result.
+  async function run(action, fn, message, toastOptions) {
     setBusy(action);
     setError("");
     try {
       const updated = await fn();
       if (updated) setCandidate(updated);
+      if (message) showToast(typeof message === "function" ? message(updated) : message, toastOptions);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -96,6 +100,7 @@ export default function CandidateDetail() {
     setBusy("delete");
     try {
       await api.deleteCandidate(id);
+      showToast(`${candidate.name} deleted`);
       navigate("/");
     } catch (err) {
       setError(err.message);
@@ -137,11 +142,21 @@ export default function CandidateDetail() {
             Edit
           </Link>
           {c.archived ? (
-            <button type="button" className="button" disabled={Boolean(busy)} onClick={() => run("archive", () => api.unarchive(id))}>
+            <button type="button" className="button" disabled={Boolean(busy)} onClick={() => run("archive", () => api.unarchive(id), `${c.name} restored`)}>
               Unarchive
             </button>
           ) : (
-            <button type="button" className="button" disabled={Boolean(busy)} onClick={() => run("archive", () => api.archive(id))}>
+            <button
+              type="button"
+              className="button"
+              disabled={Boolean(busy)}
+              onClick={() =>
+                run("archive", () => api.archive(id), `${c.name} archived`, {
+                  actionLabel: "Undo",
+                  onAction: () => run("archive", () => api.unarchive(id), `${c.name} restored`),
+                })
+              }
+            >
               Archive
             </button>
           )}
@@ -164,16 +179,18 @@ export default function CandidateDetail() {
             <div className="field stage-field">
               <label htmlFor="stage">Stage</label>
               <div className="inline">
-                <select
-                  id="stage"
-                  value={c.stage}
-                  disabled={Boolean(busy)}
-                  onChange={(e) => run("stage", () => api.changeStage(id, e.target.value))}
-                >
-                  {STAGES.map((stage) => (
-                    <option key={stage}>{stage}</option>
-                  ))}
-                </select>
+                <span className="select">
+                  <select
+                    id="stage"
+                    value={c.stage}
+                    disabled={Boolean(busy)}
+                    onChange={(e) => run("stage", () => api.changeStage(id, e.target.value), `Moved to ${e.target.value}`)}
+                  >
+                    {STAGES.map((stage) => (
+                      <option key={stage}>{stage}</option>
+                    ))}
+                  </select>
+                </span>
                 <StageBadge stage={c.stage} />
                 {busy === "stage" && <span className="muted small">Saving…</span>}
               </div>
@@ -197,7 +214,11 @@ export default function CandidateDetail() {
           <SummaryPanel
             summary={c.ai_summary}
             regenerating={busy === "summary"}
-            onRegenerate={() => run("summary", () => api.regenerateSummary(id))}
+            onRegenerate={() =>
+              run("summary", () => api.regenerateSummary(id), (updated) =>
+                updated.ai_summary?.status === "ok" ? "Summary generated" : "Summary still unavailable, try again shortly",
+              )
+            }
           />
 
           <section className="card" aria-labelledby="documents-heading">
@@ -213,7 +234,15 @@ export default function CandidateDetail() {
           </section>
         </div>
 
-        <Notes notes={c.notes} onAdd={(text) => api.addNote(id, text).then(setCandidate)} />
+        <Notes
+          notes={c.notes}
+          onAdd={(text) =>
+            api.addNote(id, text).then((updated) => {
+              setCandidate(updated);
+              showToast("Note added");
+            })
+          }
+        />
       </div>
     </>
   );

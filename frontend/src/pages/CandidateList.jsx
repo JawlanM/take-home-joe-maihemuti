@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { api } from "../api.js";
 import Avatar from "../components/Avatar.jsx";
+import SegmentedControl from "../components/SegmentedControl.jsx";
 import StageBadge from "../components/StageBadge.jsx";
 import { STAGES, formatDate } from "../constants.js";
 
-const DEFAULTS = { stage: "", role: "", sort: "created", order: "desc", include_archived: "false" };
+const DEFAULTS = { stage: "", role: "", sort: "created", order: "desc", archived: "active" };
+
+const VIEW_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "archived", label: "Archived" },
+  { value: "all", label: "All" },
+];
 
 function LoadingTable() {
   return (
@@ -28,18 +35,45 @@ function LoadingTable() {
   );
 }
 
+function EmptyState({ title, message, children }) {
+  return (
+    <div className="empty">
+      <p className="empty-title">{title}</p>
+      <p className="muted">{message}</p>
+      {children}
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, children }) {
+  return (
+    <label>
+      {label}
+      <span className="select">
+        <select value={value} onChange={(e) => onChange(e.target.value)}>
+          {children}
+        </select>
+      </span>
+    </label>
+  );
+}
+
 export default function CandidateList() {
   // Filters live in the URL, so they survive refresh and the back button.
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const filters = { ...DEFAULTS, ...Object.fromEntries(searchParams) };
 
   const [roles, setRoles] = useState([]);
   // The URL only ever holds non-default filters, so it can be sent to the API as-is.
   const queryKey = searchParams.toString();
-  // Each result remembers which query it answers; anything else means "still loading".
+  // The last result stays on screen (dimmed) while the next one loads, so changing a
+  // filter updates the table in place instead of flashing a loading state.
   const [result, setResult] = useState({ key: null, candidates: null, error: "" });
   const isCurrent = result.key === queryKey;
-  const candidates = isCurrent ? result.candidates : null;
+  const isFirstLoad = result.key === null;
+  const isRefreshing = !isCurrent && !isFirstLoad;
+  const candidates = result.candidates;
   const error = isCurrent ? result.error : "";
 
   useEffect(() => {
@@ -57,13 +91,47 @@ export default function CandidateList() {
     };
   }, [queryKey]);
 
-  function updateFilter(name, value) {
-    const next = { ...filters, [name]: value };
+  function updateFilters(changes) {
+    const next = { ...filters, ...changes };
     const nonDefault = Object.entries(next).filter(([key, val]) => val !== DEFAULTS[key]);
     setSearchParams(Object.fromEntries(nonDefault));
   }
 
-  const isFiltered = filters.stage || filters.role;
+  const hasStageOrRole = filters.stage || filters.role;
+
+  function renderEmpty() {
+    if (hasStageOrRole) {
+      return (
+        <EmptyState
+          title="No candidates found"
+          message="Try a different stage or role, or clear the filters to see the full pipeline."
+        >
+          <button type="button" className="button" onClick={() => updateFilters({ stage: "", role: "" })}>
+            Clear filters
+          </button>
+        </EmptyState>
+      );
+    }
+    if (filters.archived === "archived") {
+      return (
+        <EmptyState
+          title="No archived candidates"
+          message="Candidates you archive from their profile appear here. They keep all their data and can be restored."
+        >
+          <button type="button" className="button" onClick={() => updateFilters({ archived: "active" })}>
+            Back to active candidates
+          </button>
+        </EmptyState>
+      );
+    }
+    return (
+      <EmptyState title="No candidates yet" message="Add a candidate to start tracking your pipeline.">
+        <Link to="/candidates/new" className="button primary">
+          Add candidate
+        </Link>
+      </EmptyState>
+    );
+  }
 
   return (
     <>
@@ -75,46 +143,33 @@ export default function CandidateList() {
       </div>
 
       <form className="toolbar" onSubmit={(e) => e.preventDefault()} aria-label="Filter and sort">
-        <label>
-          Stage
-          <select value={filters.stage} onChange={(e) => updateFilter("stage", e.target.value)}>
-            <option value="">All stages</option>
-            {STAGES.map((stage) => (
-              <option key={stage}>{stage}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Role
-          <select value={filters.role} onChange={(e) => updateFilter("role", e.target.value)}>
-            <option value="">All roles</option>
-            {roles.map((role) => (
-              <option key={role}>{role}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sort by
-          <select value={filters.sort} onChange={(e) => updateFilter("sort", e.target.value)}>
-            <option value="created">Date added</option>
-            <option value="stage">Stage</option>
-          </select>
-        </label>
-        <label>
-          Order
-          <select value={filters.order} onChange={(e) => updateFilter("order", e.target.value)}>
-            <option value="desc">{filters.sort === "stage" ? "Rejected first" : "Newest first"}</option>
-            <option value="asc">{filters.sort === "stage" ? "Applied first" : "Oldest first"}</option>
-          </select>
-        </label>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={filters.include_archived === "true"}
-            onChange={(e) => updateFilter("include_archived", String(e.target.checked))}
-          />
-          Show archived
-        </label>
+        <SegmentedControl
+          label="Show"
+          name="archived"
+          options={VIEW_OPTIONS}
+          value={filters.archived}
+          onChange={(archived) => updateFilters({ archived })}
+        />
+        <FilterSelect label="Stage" value={filters.stage} onChange={(stage) => updateFilters({ stage })}>
+          <option value="">All stages</option>
+          {STAGES.map((stage) => (
+            <option key={stage}>{stage}</option>
+          ))}
+        </FilterSelect>
+        <FilterSelect label="Role" value={filters.role} onChange={(role) => updateFilters({ role })}>
+          <option value="">All roles</option>
+          {roles.map((role) => (
+            <option key={role}>{role}</option>
+          ))}
+        </FilterSelect>
+        <FilterSelect label="Sort by" value={filters.sort} onChange={(sort) => updateFilters({ sort })}>
+          <option value="created">Date added</option>
+          <option value="stage">Stage</option>
+        </FilterSelect>
+        <FilterSelect label="Order" value={filters.order} onChange={(order) => updateFilters({ order })}>
+          <option value="desc">{filters.sort === "stage" ? "Rejected first" : "Newest first"}</option>
+          <option value="asc">{filters.sort === "stage" ? "Applied first" : "Oldest first"}</option>
+        </FilterSelect>
       </form>
 
       {error && (
@@ -123,61 +178,61 @@ export default function CandidateList() {
         </p>
       )}
 
-      {!error && candidates === null && <LoadingTable />}
+      {isFirstLoad && !error && <LoadingTable />}
 
-      {candidates?.length === 0 &&
-        (isFiltered ? (
-          <div className="empty">
-            <p className="empty-title">No candidates found</p>
-            <p className="muted">Try a different stage or role, or clear the filters to see the full pipeline.</p>
-            <button type="button" className="button" onClick={() => setSearchParams({})}>
-              Clear filters
-            </button>
-          </div>
-        ) : (
-          <div className="empty">
-            <p className="empty-title">No candidates yet</p>
-            <p className="muted">Add a candidate to start tracking your pipeline.</p>
-            <Link to="/candidates/new" className="button primary">
-              Add candidate
-            </Link>
-          </div>
-        ))}
-
-      {candidates?.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Role</th>
-                <th scope="col">Stage</th>
-                <th scope="col">Source</th>
-                <th scope="col">Date added</th>
-              </tr>
-            </thead>
-            <tbody className="stagger">
-              {candidates.map((c, index) => (
-                <tr key={c.id} className={c.archived ? "archived" : undefined} style={{ "--i": index }}>
-                  <td>
-                    <div className="name-cell">
-                      <Avatar name={c.name} />
-                      <span>
-                        <Link to={`/candidates/${c.id}`}>{c.name}</Link>
-                        {c.archived && <span className="tag">Archived</span>}
-                      </span>
-                    </div>
-                  </td>
-                  <td>{c.role}</td>
-                  <td>
-                    <StageBadge stage={c.stage} />
-                  </td>
-                  <td>{c.source || <span className="muted">None</span>}</td>
-                  <td>{formatDate(c.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {candidates && (
+        <div className={`results ${isRefreshing ? "is-refreshing" : ""}`} aria-busy={isRefreshing}>
+          <p className="result-count muted" aria-live="polite">
+            {candidates.length} {candidates.length === 1 ? "candidate" : "candidates"}
+          </p>
+          {candidates.length === 0 ? (
+            renderEmpty()
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Stage</th>
+                    <th scope="col">Source</th>
+                    <th scope="col">Date added</th>
+                  </tr>
+                </thead>
+                <tbody className="stagger" key={result.key}>
+                  {candidates.map((c, index) => (
+                    <tr
+                      key={c.id}
+                      className={`row-link ${c.archived ? "archived" : ""}`}
+                      style={{ "--i": index }}
+                      // Whole row opens the candidate. The name stays a real link for
+                      // keyboard users and Ctrl/Cmd-click; text selection doesn't navigate.
+                      onClick={(e) => {
+                        if (e.target.closest("a") || window.getSelection()?.toString()) return;
+                        navigate(`/candidates/${c.id}`);
+                      }}
+                    >
+                      <td>
+                        <div className="name-cell">
+                          <Avatar name={c.name} />
+                          <span>
+                            <Link to={`/candidates/${c.id}`}>{c.name}</Link>
+                            {c.archived && <span className="tag">Archived</span>}
+                          </span>
+                        </div>
+                      </td>
+                      <td>{c.role}</td>
+                      <td>
+                        <StageBadge stage={c.stage} />
+                      </td>
+                      <td>{c.source || <span className="muted">None</span>}</td>
+                      <td>{formatDate(c.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </>

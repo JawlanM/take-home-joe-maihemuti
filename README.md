@@ -110,7 +110,7 @@ docs/           design, write-up, deployment design
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/candidates?stage=&role=&sort=created\|stage&order=asc\|desc&include_archived=` | List, filter, sort |
+| GET | `/api/candidates?stage=&role=&sort=created\|stage&order=asc\|desc&archived=active\|archived\|all` | List, filter, sort |
 | POST | `/api/candidates` | Create (generates AI summary) |
 | GET | `/api/candidates/{id}` | Detail |
 | PATCH | `/api/candidates/{id}` | Edit (summary regenerates only if resume/cover letter changed) |

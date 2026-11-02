@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api.js";
 import TextFileField from "../components/TextFileField.jsx";
+import { useToast } from "../components/toastContext.js";
 import { STAGES } from "../constants.js";
 
 const EMPTY = {
@@ -52,6 +53,7 @@ export default function CandidateForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const showToast = useToast();
 
   const [values, setValues] = useState(EMPTY);
   const [roles, setRoles] = useState([]);
@@ -86,6 +88,7 @@ export default function CandidateForm() {
     try {
       const payload = toPayload(values, isEdit);
       const saved = isEdit ? await api.updateCandidate(id, payload) : await api.createCandidate(payload);
+      showToast(isEdit ? "Changes saved" : `${saved.name} added`);
       navigate(`/candidates/${saved.id}`);
     } catch (err) {
       setError(err.message);
@@ -124,11 +127,13 @@ export default function CandidateForm() {
           {!isEdit && (
             <div className="field">
               <label htmlFor="stage">Stage</label>
-              <select id="stage" value={values.stage} onChange={(e) => handleChange("stage", e.target.value)}>
-                {STAGES.map((stage) => (
-                  <option key={stage}>{stage}</option>
-                ))}
-              </select>
+              <span className="select">
+                <select id="stage" value={values.stage} onChange={(e) => handleChange("stage", e.target.value)}>
+                  {STAGES.map((stage) => (
+                    <option key={stage}>{stage}</option>
+                  ))}
+                </select>
+              </span>
             </div>
           )}
         </fieldset>
