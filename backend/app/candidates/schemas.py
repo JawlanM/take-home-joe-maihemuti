@@ -1,13 +1,13 @@
 """Request/response shapes for the candidates API, and the Stage enum."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, StringConstraints, field_validator
 
 
-class Stage(str, Enum):
+class Stage(StrEnum):
     # Declaration order IS the pipeline order; sorting by stage relies on it.
     APPLIED = "Applied"
     SCREENING = "Screening"
@@ -26,6 +26,16 @@ LongText = Annotated[str, StringConstraints(max_length=100_000)]
 NoteText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5_000)]
 
 
+class ListQuery(BaseModel):
+    """Filters and sort options for the candidate list, read from the URL query string."""
+
+    stage: Stage | None = None
+    role: str | None = None
+    include_archived: bool = False
+    sort: Literal["created", "stage"] = "created"
+    order: Literal["asc", "desc"] = "desc"
+
+
 class CandidateCreate(BaseModel):
     name: Name
     email: EmailStr
@@ -38,7 +48,11 @@ class CandidateCreate(BaseModel):
 
 
 class CandidateUpdate(BaseModel):
-    """Every field optional: only the fields sent are changed. Stage has its own endpoint."""
+    """Partial update: only the fields sent are changed. Stage has its own endpoint.
+
+    phone and source may be set to null to clear them. The other fields can be
+    left out, but sending null for them is rejected rather than silently ignored.
+    """
 
     name: Name | None = None
     email: EmailStr | None = None
@@ -47,6 +61,13 @@ class CandidateUpdate(BaseModel):
     source: ShortText | None = None
     resume_text: LongText | None = None
     cover_letter_text: LongText | None = None
+
+    @field_validator("name", "email", "role", "resume_text", "cover_letter_text", mode="before")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("cannot be null; leave the field out to keep its current value")
+        return value
 
 
 class StageUpdate(BaseModel):

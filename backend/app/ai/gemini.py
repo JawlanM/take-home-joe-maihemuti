@@ -27,9 +27,9 @@ class GeminiClient:
                 # Structured output: Gemini is constrained to this JSON schema.
                 response_mime_type="application/json",
                 response_schema=ModelOutput,
-                temperature=0.2,          # summarising, not creative writing
-                max_output_tokens=2048,   # hard cap on response size / cost
-                thinking_config=types.ThinkingConfig(thinking_level="low"),
+                temperature=0.2,  # summarising, not creative writing
+                max_output_tokens=2048,  # hard cap on response size / cost
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
             ),
         )
         return response.text or ""

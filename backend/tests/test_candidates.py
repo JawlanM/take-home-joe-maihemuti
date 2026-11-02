@@ -133,6 +133,26 @@ def test_editing_resume_regenerates_summary(client, make_candidate, summariser):
     assert summariser.calls[-1][0] == "New resume with Go and Rust"
 
 
+def test_explicit_null_for_required_field_is_rejected_not_ignored(client, make_candidate):
+    c = make_candidate()
+    for field in ["name", "email", "role", "resume_text"]:
+        r = client.patch(f"/api/candidates/{c['id']}", json={field: None})
+        assert r.status_code == 422, field
+
+
+def test_optional_fields_can_be_cleared_with_null(client, make_candidate):
+    c = make_candidate(phone="0400 000 000", source="LinkedIn")
+    r = client.patch(f"/api/candidates/{c['id']}", json={"phone": None, "source": None})
+    assert r.json()["phone"] is None and r.json()["source"] is None
+
+
+def test_clearing_cover_letter_regenerates_summary(client, make_candidate, summariser):
+    c = make_candidate(cover_letter_text="I love APIs.")
+    r = client.patch(f"/api/candidates/{c['id']}", json={"cover_letter_text": ""})
+    assert r.json()["cover_letter_text"] == ""
+    assert summariser.calls[-1] == (c["resume_text"], "")
+
+
 def test_resending_identical_resume_does_not_call_ai(client, make_candidate, summariser):
     c = make_candidate()
     client.patch(f"/api/candidates/{c['id']}", json={"resume_text": c["resume_text"]})
@@ -151,7 +171,7 @@ def test_regenerate_endpoint(client, make_candidate, summariser):
 
 
 def test_archived_hidden_by_default_and_shown_on_request(client, make_candidate):
-    keep = make_candidate(name="Active")
+    make_candidate(name="Active")
     gone = make_candidate(name="Archived")
     r = client.post(f"/api/candidates/{gone['id']}/archive")
     assert r.json()["archived"] is True and r.json()["archived_at"]
@@ -160,7 +180,6 @@ def test_archived_hidden_by_default_and_shown_on_request(client, make_candidate)
     assert sorted(names(client.get("/api/candidates?include_archived=true"))) == ["Active", "Archived"]
     # Archived candidate is still readable (data kept)
     assert client.get(f"/api/candidates/{gone['id']}").status_code == 200
-    assert keep  # silence unused
 
 
 def test_unarchive_restores(client, make_candidate):

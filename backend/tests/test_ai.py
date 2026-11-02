@@ -140,7 +140,7 @@ def test_list_and_summary_sizes_are_capped():
     [
         "this is not json",
         '{"summary": "missing the other fields"}',
-        '{"summary": 1, "skills": "Python", "highlights": [], "insufficient_info": false, "suspicious_content": false}',
+        model_json(summary=1, skills="Python"),  # wrong types
         "",
     ],
 )
@@ -154,6 +154,15 @@ def test_model_errors_become_failed_not_a_crash():
     result = summarise("Python developer with five projects.", "", client=FakeModel(TimeoutError("slow")))
     assert result["status"] == "failed"
     assert "slow" not in result["error"]  # internal details aren't shown to users
+
+
+def test_client_setup_errors_become_failed_not_a_crash(monkeypatch):
+    def broken_client():
+        raise ValueError("invalid API key format")
+
+    monkeypatch.setattr(summariser_module.settings, "gemini_api_key", "bad-key")
+    monkeypatch.setattr(summariser_module, "_default_client", broken_client)
+    assert summarise("Python developer with five projects.", "")["status"] == "failed"
 
 
 def test_no_api_key_means_disabled(monkeypatch):

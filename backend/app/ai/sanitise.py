@@ -25,8 +25,8 @@ _BLANK_LINES = re.compile(r"\n{3,}")
 
 @dataclass
 class CleanedInput:
-    text: str           # labelled, combined, capped text that will be sent to the model
-    letter_count: int   # letters in the actual resume/cover-letter content (labels excluded)
+    text: str  # labelled, combined, capped text that will be sent to the model
+    letter_count: int  # letters in the actual resume/cover-letter content (labels excluded)
     truncated: bool
 
 

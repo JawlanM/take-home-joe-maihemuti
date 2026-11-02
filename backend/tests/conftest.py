@@ -3,7 +3,7 @@
 No real database or Gemini key is needed to run the tests.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import mongomock
 import pytest
@@ -28,7 +28,7 @@ class FakeSummariser:
             "summary": f"Summary of {len(resume_text)} chars",
             "skills": ["Python"],
             "highlights": [],
-            "generated_at": datetime.now(timezone.utc),
+            "generated_at": datetime.now(UTC),
         }
 
 

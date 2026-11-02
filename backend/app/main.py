@@ -5,25 +5,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pymongo.collection import Collection
 
+from app.ai.summariser import summarise as ai_summarise
 from app.candidates.repository import CandidateRepository
 from app.candidates.routes import router
 from app.candidates.service import CandidateNotFound, CandidateService, SummariseFn
 from app.config import settings
+from app.db import get_candidates_collection
 
 
 def create_app(collection: Collection | None = None, summarise: SummariseFn | None = None) -> FastAPI:
     """Tests pass in a mock collection and a fake summariser; production uses the real ones."""
-    if collection is None:
-        from app.db import get_candidates_collection
-
-        collection = get_candidates_collection()
-    if summarise is None:
-        from app.ai.summariser import summarise as real_summarise
-
-        summarise = real_summarise
+    service = CandidateService(
+        CandidateRepository(collection if collection is not None else get_candidates_collection()),
+        summarise or ai_summarise,
+    )
 
     app = FastAPI(title="Candidate Tracker API")
-    app.state.candidate_service = CandidateService(CandidateRepository(collection), summarise)
+    app.state.candidate_service = service
 
     app.add_middleware(
         CORSMiddleware,
