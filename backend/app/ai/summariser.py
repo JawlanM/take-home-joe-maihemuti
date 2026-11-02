@@ -79,7 +79,8 @@ def summarise(
     try:
         output = ModelOutput.model_validate_json(raw)
     except ValidationError as exc:
-        logger.warning("Gemini returned invalid output: %s", exc)
+        # Log only the error count: the error text can quote model output derived from the resume.
+        logger.warning("Gemini returned invalid output (%d validation errors)", exc.error_count())
         return _summary_result(
             "failed", model=model_name, flags=flags, error="The AI returned an unusable response"
         )

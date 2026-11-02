@@ -115,6 +115,22 @@ def test_skills_not_in_the_resume_are_dropped():  # C6: model obeys injection an
     assert result["dropped_skills"] == 2
 
 
+@pytest.mark.parametrize(
+    ("resume", "skill", "kept"),
+    [
+        ("Built storefronts in JavaScript and React.", "Java", False),  # substring of another word
+        ("Wrote services in Java and Kotlin.", "Java", True),
+        ("Internal tools in C# with ASP.NET Core.", "C#", True),
+        ("Game engine work in C++ for two years.", "C++", True),
+        ("APIs on Node.js, Express and MongoDB.", "Node.js", True),
+        ("Migrated the team to Rust last year.", "R", False),  # single letter inside a word
+    ],
+)
+def test_skills_must_appear_as_whole_terms(resume, skill, kept):
+    result = summarise(resume, "", client=FakeModel(model_json(skills=[skill])))
+    assert (skill in result["skills"]) is kept
+
+
 def test_duplicate_and_differently_cased_skills_are_merged():
     fake = FakeModel(model_json(skills=["Python", "python", " PYTHON "]))
     result = summarise("Experienced Python developer building web services.", "", client=fake)

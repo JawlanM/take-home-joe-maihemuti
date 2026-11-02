@@ -1,9 +1,16 @@
 """Step 5 of the AI pipeline: check the model's output against the text it was given.
 
-Grounding rule: a skill is kept only if it literally appears in the (cleaned) input.
-This catches skills the model invented. It does NOT catch false claims that are copied
-from the input itself (e.g. an injected "10 years at Google"); the prompt rules, the
-suspicious_content flag and display-only output cover that case.
+Grounding rule: a skill is kept only if it appears in the (cleaned) input as a whole
+term, so "Java" is not accepted just because the resume says "JavaScript".
+
+Limits, on purpose and documented:
+- It catches skills the model invented. It does NOT catch false claims copied from the
+  input itself (e.g. an injected "10 years at Google"); the prompt rules, the
+  suspicious_content flag and display-only output cover that case.
+- Only skills are checked. Highlights and the summary are prose and can't be verified
+  by string matching; they are length-capped and shown as AI-generated.
+- Matching is literal, so a real skill written differently ("NodeJS" vs "Node.js") is
+  dropped. Dropping a real skill is preferred over showing an invented one.
 """
 
 import re
@@ -18,6 +25,16 @@ def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().casefold()
 
 
+def _appears_as_term(term: str, text: str) -> bool:
+    """True if `term` occurs in `text` not glued to other letters or digits on either side.
+
+    Uses explicit letter/digit look-arounds rather than \b so terms that start or end with
+    symbols still work: "C#", "C++", ".NET", "Node.js".
+    """
+    pattern = rf"(?<![^\W_]){re.escape(term)}(?![^\W_])"
+    return re.search(pattern, text) is not None
+
+
 def ground_skills(skills: list[str], source_text: str) -> tuple[list[str], int]:
     """Return (skills found in the source, number dropped). Also de-duplicates."""
     source = _normalise(source_text)
@@ -28,7 +45,7 @@ def ground_skills(skills: list[str], source_text: str) -> tuple[list[str], int]:
         key = _normalise(skill)
         if not key or key in seen:
             continue
-        if key in source:
+        if _appears_as_term(key, source):
             seen.add(key)
             kept.append(skill.strip()[:MAX_ITEM_CHARS])
         else:

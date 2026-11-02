@@ -27,10 +27,25 @@ API key stays inside the project's Secret Manager.
 | Container images | **Artifact Registry** | Where Cloud Build pushes images for Cloud Run. |
 | Build | **Cloud Build** | Builds the backend image from the repo on each push to `main`. |
 | Database | **MongoDB Atlas on GCP** (Melbourne/Sydney region) | GCP has no native MongoDB; Atlas runs it inside Google's network, near users. |
-| Secrets | **Secret Manager** | Gemini key and MongoDB URI injected into Cloud Run as env vars; never in the repo. |
-| AI | **Gemini API** | Same provider as the hosting; billed to the same project. |
+| Secrets | **Secret Manager** | MongoDB URI injected into Cloud Run as an env var; never in the repo. (Vertex AI needs no API key.) |
+| AI | **Gemini on Vertex AI** | Same cloud, regional processing, service-account auth; see below. |
 | Logs / alerts | **Cloud Logging + Cloud Monitoring** | Cloud Run logs by default; alert on 5xx rate and on failed-summary log lines. |
 | Spend guard | **Cloud Billing budget alert** | Email at 50% / 90% of a monthly budget. |
+
+## Gemini: billing and data handling are separate from hosting
+
+Hosting on GCP doesn't by itself decide how candidate data is handled by the model.
+
+- **Local development** uses a Gemini API key from Google AI Studio. It's billed under the Gemini
+  API's own pricing (free tier or pay-as-you-go), not as Cloud Run usage. Under Google's terms at
+  the time of writing, free-tier prompts may be used to improve Google's products, so **no real
+  candidate data should go through a free-tier key**.
+- **Production** should call Gemini through **Vertex AI** in an Australian region instead: billed
+  to the GCP project, authenticated with Cloud Run's service account (no API key to leak), covered
+  by Google Cloud's data terms (customer data not used for training), and processed in-region.
+  The code change is confined to `backend/app/ai/gemini.py`, since the SDK supports both.
+- Resumes contain personal information, so prompts and responses aren't written to logs; only
+  failure reasons are.
 
 ## Things that change for a public deployment
 
