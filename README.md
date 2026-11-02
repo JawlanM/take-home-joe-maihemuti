@@ -8,7 +8,7 @@ AI-generated summary of each candidate's skills and experience.
 - **Frontend:** React 19, Vite, React Router, plain CSS
 - **AI:** Google Gemini (`google-genai` SDK), isolated in [`backend/app/ai/`](backend/app/ai/)
 
-More detail: [design](docs/DESIGN.md) · [write-up](docs/WRITEUP.md) · [deployment design](docs/DEPLOYMENT.md)
+More detail: [design](docs/DESIGN.md) · [write-up](docs/WRITEUP.md) · [deployment design](docs/DEPLOYMENT.md) · [learning log](docs/LEARNING_LOG.md)
 
 ## Screenshots
 
