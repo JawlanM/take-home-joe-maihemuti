@@ -10,6 +10,14 @@ AI-generated summary of each candidate's skills and experience.
 
 More detail: [design](docs/DESIGN.md) · [write-up](docs/WRITEUP.md) · [deployment design](docs/DEPLOYMENT.md)
 
+## Screenshots
+
+| Candidate list | Injection attempt flagged |
+|---|---|
+| ![Candidate list with stage filters and badges](docs/screenshots/1-candidate-list.jpg) | ![AI summary of an injected resume: warning shown, injected claims absent](docs/screenshots/2-injection-warning.jpg) |
+| **Candidate detail** | **Add candidate** |
+| ![Candidate profile with stage, notes and summary](docs/screenshots/3-candidate-detail.jpg) | ![Add candidate form with .txt upload](docs/screenshots/4-add-candidate.jpg) |
+
 ---
 
 ## Run it (Docker, recommended)
