@@ -22,27 +22,30 @@ More detail: [design](docs/DESIGN.md) · [write-up](docs/WRITEUP.md) · [deploym
 
 ## Run it (Docker, recommended)
 
-Needs Docker Desktop. From the repo root:
+Needs [Git](https://git-scm.com/downloads) and [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running). Works the same on Windows, macOS and Linux:
 
 ```bash
-cp .env.example .env          # optional: add your GEMINI_API_KEY to enable AI summaries
-docker compose up --build     # starts MongoDB, backend and frontend
+git clone https://github.com/JawlanM/take-home-joe-maihemuti.git
+cd take-home-joe-maihemuti
+docker compose up --build        # starts MongoDB, backend and frontend (first build takes a few minutes)
 ```
 
-In a second terminal, load the sample candidates:
+In a second terminal, from the same folder, load the sample candidates:
 
 ```bash
 docker compose exec backend python -m seed.load_seed
 ```
 
 Open **http://localhost:5173**. The API runs on http://localhost:8000 (interactive docs at
-http://localhost:8000/docs).
+http://localhost:8000/docs). Stop everything with `docker compose down`.
 
-**No Gemini key?** Everything still works; summaries show as "AI summaries are turned off".
-A free key is available from [Google AI Studio](https://aistudio.google.com/apikey). The
-free tier allows about 5 requests per minute and about 20 per day, so the seed loader
-pauses between candidates (about 2 minutes for all 10; 9 of them call Gemini). If a limit
-is hit, the candidate is still saved and the summary shows "Regenerate".
+**AI summaries are optional.** Without a key everything works and summaries show as "AI summaries
+are turned off". To enable them, create a file named `.env` next to `docker-compose.yml` containing
+`GEMINI_API_KEY=your-key` (a free key is available from
+[Google AI Studio](https://aistudio.google.com/apikey)), then run `docker compose up --build` again.
+The free tier allows about 5 requests per minute and about 20 per day, so the seed loader pauses
+between candidates (about 2 minutes for all 10; 9 of them call Gemini). If a limit is hit, the
+candidate is still saved and the summary shows "Regenerate".
 
 ## Run it without Docker
 
