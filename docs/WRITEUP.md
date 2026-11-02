@@ -1,103 +1,83 @@
 # Write-up
 
-## What I built and what I left out
+## Scope
 
-A working end-to-end slice of every required feature: add, list with stage/role filters,
-sort by date or pipeline stage, detail view, any-to-any stage moves, append-only notes,
-archive and delete, and an AI summary per candidate. I spent the remaining time on the parts
-the brief weights most (the AI module, its handling of bad input, and tests) rather than on
-extra features. Authentication and real deployment are out of scope; a deployment design is in
-[DEPLOYMENT.md](DEPLOYMENT.md).
+Every required feature works end to end: add, list with stage/role filters, sort by date or
+pipeline stage, detail view, any-to-any stage moves, append-only notes, archive and delete, and
+an AI summary per candidate. I put the remaining time into what the brief weights most: the AI
+module, how it handles bad input, and tests, rather than extra features. Deployment is a design
+([DEPLOYMENT.md](DEPLOYMENT.md)); full detail is in [DESIGN.md](DESIGN.md).
 
 ## Design choices
 
-- **FastAPI + MongoDB.** A candidate is one self-contained record, and notes are append-only
-  and always read with their candidate, so they're embedded in the candidate document: no
-  joins, and the append-only rule is enforced by only ever using `$push` (there is no
-  endpoint to edit or delete a note).
-- **Layered backend:** `routes -> service -> repository`. Routes only translate HTTP; the
-  service holds the rules; the repository is the only code that touches MongoDB. The service
-  receives the summariser as a function, so tests swap in a fake.
-- **Archive vs delete.** Archive is a soft delete (hidden from the list by default, data kept,
-  reversible). Delete is permanent and confirmed in the UI.
-- **Sort by stage means pipeline order**, not alphabetical (which would put Interview first).
-  There's a test for exactly that.
-- **Edit is included** although the brief doesn't list it, so a candidate who sends a new
-  resume can be updated without delete-and-re-add (which would lose their notes). The summary
-  regenerates only when the resume or cover-letter text changes; editing a phone number
-  doesn't cost an AI call.
-- **`.txt` upload is read in the browser** into the text box, so the user sees exactly what's
-  saved and the backend only ever handles text.
+- **FastAPI + MongoDB.** Notes are append-only and always read with their candidate, so they're
+  embedded in the candidate document. Append-only is enforced by design: notes are only ever
+  `$push`ed and no endpoint edits or deletes one.
+- **Layered backend** (`routes -> service -> repository`). Only the repository touches MongoDB;
+  the service receives the summariser as a function, so tests swap in a fake.
+- **Archive is a soft delete** (hidden by default, reversible, with Undo); **delete is permanent**
+  and confirmed.
+- **Sort by stage uses pipeline order**, not alphabetical (which would put Interview first).
+- **Edit is included** so a new resume doesn't mean delete-and-re-add (losing notes). The summary
+  regenerates only when resume or cover-letter text changes.
+- **`.txt` upload is read in the browser** into the text box: the user sees what's saved, and the
+  backend only ever handles text.
 
 ## The AI feature
 
-Everything lives in `backend/app/ai/`, behind one function:
-`summarise(resume_text, cover_letter_text) -> summary`. It runs five steps:
+Everything is in `backend/app/ai/` behind one function, `summarise(resume, cover_letter)`:
 
-1. **Clean the input:** Unicode normalisation, strip control characters, collapse whitespace,
-   cap at 20,000 characters (and flag the summary as truncated), and remove any `<resume>`
-   tags so the text can't close its own wrapper.
-2. **Pre-check:** if there's almost nothing readable, return "no readable text" without
-   calling the model.
-3. **Prompt:** the rules go in Gemini's *system instruction*; the applicant's text goes
-   separately, wrapped in `<resume>` tags and described as untrusted data that is never an
-   instruction. The model is told to report only what's stated, never include personal
-   details, and to set a `suspicious_content` flag if the text tries to instruct it. Only the
-   resume and cover letter are sent; name, email and phone never leave the app.
-4. **Structured output:** Gemini must return JSON matching a schema (summary, skills,
-   highlights, two flags). Low temperature, output-token cap, 30-second timeout.
-5. **Validate and ground:** the JSON is parsed strictly (anything malformed becomes
-   "failed"), and any skill that doesn't literally appear in the resume is dropped.
+1. **Clean:** normalise Unicode, strip control characters, cap at 20,000 characters (flagged as
+   truncated), and remove `<resume>` tags so the text can't close its own wrapper.
+2. **Pre-check:** almost no readable text means no model call.
+3. **Prompt:** rules go in Gemini's system instruction; the applicant's text goes separately,
+   wrapped and described as untrusted data that is never an instruction. Only resume and cover
+   letter are sent; name, email and phone never leave the app.
+4. **Structured output:** JSON matching a schema (summary, skills, highlights, flags), low
+   temperature, token cap, 30-second timeout.
+5. **Validate and ground:** malformed output becomes "failed"; skills not found in the resume are
+   dropped.
 
-The output is **display-only**: it can't change the candidate's stage or trigger anything,
-React renders it as plain text (so a `<script>` in a resume is shown, never run), it's
-labelled as AI-generated, and a visible warning appears when `suspicious_content` is set.
-Any failure (network, timeout, rate limit, bad output) becomes a "failed" summary with a
-Regenerate button; saving the candidate never fails because of the AI.
+The output is **display-only**: it can't change a stage or trigger anything, it's rendered as plain
+text (a `<script>` in a resume is shown, never run), it's labelled AI-generated, and a warning
+appears when the model flags injected instructions. Any failure (network, timeout, rate limit, bad
+output) saves the candidate anyway with a Regenerate button.
 
-**Why Gemini (gemini-3.5-flash):** fast and cheap for short summaries, supports schema-based
-JSON output, and it's on the same cloud as the deployment design. I measured before choosing:
-an older model is closed to new users, and the newest Flash model took about 60 seconds per
-call, so I picked the version that answered in a few seconds.
+**Why Gemini (gemini-3.5-flash):** fast and cheap for short summaries, schema-based JSON output, and
+the same cloud as the deployment design. I measured before choosing: one model was closed to new
+users, and the newest took about 60 seconds per call.
 
-**Honest limitation.** No prompt-based defence is perfect. Grounding catches *invented*
-skills, but not false claims copied from the resume itself: the blunt injection literally
-contains "10 years at Google", so a substring check passes it. That case is handled by the
-system instruction, the warning flag, and the fact that the output can't *do* anything. The
-design limits what a successful injection can achieve instead of trusting the model to refuse.
+**Limitation.** Grounding catches *invented* skills, not false claims copied from the resume: the
+injection seed literally contains "10 years at Google". That case relies on the system
+instruction, the warning flag, and output that can't act. No prompt defence is perfect, so the
+design limits what a successful injection can do.
 
 ## Tests
 
-47 backend tests run without a database or API key (in-memory MongoDB, fake Gemini). They
-target behaviour that could plausibly break: pipeline-order sorting, filters, archived
-visibility, append-only notes, 404s, "edit contact details doesn't call the AI", and for the AI
-module: empty/junk/oversized input, wrapper-tag escape, invented skills, malformed JSON,
-timeouts and setup errors. Two opt-in live tests run the injection resumes against real Gemini
-and check the injected claims don't appear and the warning flag is set.
+47 backend tests need no database or API key (in-memory MongoDB, fake Gemini). They cover what
+could plausibly break: pipeline-order sorting, filters, archive views, append-only notes, 404s,
+"editing a phone number doesn't call the AI", and empty, junk, oversized and injected input,
+wrapper escape, invented skills, malformed JSON and timeouts. Two opt-in live tests run the
+injection resumes against real Gemini.
 
 ## Tradeoffs
 
-- Summaries are generated **synchronously** when saving (a few seconds). Simpler than a
-  background job plus polling; the cost is a slower save.
-- Sorting by stage happens **in Python**, fine at this scale; at thousands of candidates I'd
-  store a stage rank and sort and paginate in MongoDB.
-- Skill grounding is a **literal substring match**, so "Node.js" vs "NodeJS" would be dropped.
-  I preferred dropping a real skill over showing an invented one.
-- The Gemini free tier allows ~5 requests per minute and ~20 per day; bulk loads are paced,
-  and when a limit is hit the app degrades to "failed + Regenerate" rather than erroring.
+- Summaries are generated **synchronously** on save: simpler than a job queue, slower to save.
+- Stage sorting runs **in Python**; at scale I'd store a stage rank and sort/paginate in MongoDB.
+- Grounding is a **literal match**, so "NodeJS" vs "Node.js" gets dropped. I'd rather drop a real
+  skill than show an invented one.
+- The free Gemini tier allows ~5 requests a minute and ~20 a day; the app degrades to
+  "failed + Regenerate" instead of erroring.
 
 ## What I'd build next
 
-1. **Authentication and roles** (Identity-Aware Proxy first, then per-user audit of notes and stage changes).
-2. **PDF and DOCX upload, including scanned PDFs.** Extract text on the server. Some PDFs have no
-   text layer (scans, or pages saved as images), so extraction returns nothing; I've hit this
-   before. Detect the empty result, fall back to OCR (Google Document AI or Tesseract), and tell
-   the recruiter when a file still can't be read instead of summarising nothing.
-3. **Background summary generation** with a queue and automatic retry on rate limits.
-4. **Job-description matching:** compare each candidate against the role's requirements, with the same grounding rules.
-5. **Talent pool and data retention, with consent.** Candidates who opt in stay in a talent pool
-   and are flagged when a matching role opens; other archived candidates are auto-deleted after
-   a retention period; permanent delete gets a short undo window first.
-6. **Pipeline board:** a kanban view with drag between stages, stage counts, bulk move/reject,
-   and "days in stage".
-7. Search and pagination once the list grows.
+1. **Authentication and roles**, starting with Identity-Aware Proxy.
+2. **PDF/DOCX upload with OCR fallback.** Scanned or image-only PDFs have no text layer and extract
+   as nothing (I've hit this before), so detect that, fall back to OCR (Document AI or
+   Tesseract), and tell the recruiter if it still can't be read.
+3. **Background summaries** with retry on rate limits.
+4. **Job-description matching**, with the same grounding rules.
+5. **Talent pool and retention, with consent:** opted-in candidates are flagged for new matching
+   roles, other archived candidates are auto-deleted after a retention period, and deletes get a
+   short undo window.
+6. **Pipeline board:** kanban with drag between stages, stage counts, bulk actions, days in stage.
