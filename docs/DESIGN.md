@@ -179,9 +179,9 @@ base URL comes from `VITE_API_URL`.
 
 | Screen | Contents |
 |---|---|
-| **List** `/` | Table: name, role, stage, source, date added. Filters: stage, role. Sort: date added / stage, asc/desc. "Show archived" toggle. "Add candidate" button. |
-| **Add / Edit** `/candidates/new`, `/candidates/:id/edit` | One form. Resume and cover letter each have a text box + "Load .txt" button (rejects non-.txt and files over ~200 KB). Inline validation errors. |
-| **Detail** `/candidates/:id` | Profile; stage dropdown (saves immediately); **AI summary panel** (summary, skills, highlights, flags/warnings, Regenerate button when failed); notes history (newest first) + add-note box; Archive/Unarchive; Delete with confirm. |
+| **List** `/` | Table: name, role, stage, source, date added; the whole row opens the candidate. Filters: stage, role. Sort: date added / stage, asc/desc. Active / Archived / All switch. Filters live in the URL; the table updates in place. "Add candidate" button. |
+| **Add / Edit** `/candidates/new`, `/candidates/:id/edit` | One form. Resume and cover letter each have a text box + "Upload .txt from computer" (rejects non-.txt and files over 200 KB, confirms the file name). Existing roles offered as chips. Inline validation errors. |
+| **Detail** `/candidates/:id` | Profile; stage dropdown (saves immediately); **AI summary panel** (summary, skills, highlights, flags/warnings, Regenerate button when failed); notes history (newest first) + add-note box; Archive (with Undo) / Unarchive; Delete with confirm. Every action confirms with a toast. |
 
 Loading, empty ("No candidates match these filters") and error states on each screen. Nothing fancy.
 
@@ -192,7 +192,7 @@ Loading, empty ("No candidates match these filters") and error states on each sc
 Gemini is replaced by a **fake client** in tests, so tests run without a key and can simulate bad output.
 
 **Core logic** (via FastAPI TestClient + mongomock):
-- Filter by stage, by role, by both; archived hidden by default, shown with the toggle.
+- Filter by stage, by role, by both; archived hidden by default, shown in the Archived / All views.
 - Sort by stage follows pipeline order, not alphabetical (the bug this catches is real).
 - Any stage to any stage works; invalid stage -> 422.
 - Notes append with timestamp; earlier notes unchanged after adding another.
