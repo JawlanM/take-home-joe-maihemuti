@@ -68,7 +68,7 @@ design limits what a successful injection can achieve instead of trusting the mo
 
 ## Tests
 
-45 backend tests run without a database or API key (in-memory MongoDB, fake Gemini). They
+47 backend tests run without a database or API key (in-memory MongoDB, fake Gemini). They
 target behaviour that could plausibly break: pipeline-order sorting, filters, archived
 visibility, append-only notes, 404s, "edit contact details doesn't call the AI", and for the AI
 module: empty/junk/oversized input, wrapper-tag escape, invented skills, malformed JSON,

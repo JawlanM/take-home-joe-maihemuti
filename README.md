@@ -62,7 +62,7 @@ The frontend calls `http://localhost:8000` by default; set `VITE_API_URL` to cha
 
 ```bash
 cd backend
-pytest                            # 45 tests, no database or API key needed
+pytest                            # 47 tests, no database or API key needed
 ruff check app tests && ruff format --check app tests && mypy app
 
 RUN_LIVE_AI=1 pytest tests/test_ai_live.py   # optional: real Gemini vs the injection resumes
