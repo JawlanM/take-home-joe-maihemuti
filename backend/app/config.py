@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     # Empty key = AI summaries disabled; the rest of the app still works.
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
 
     # Comma-separated list of allowed frontend origins.
     cors_origins: str = "http://localhost:5173"

@@ -3,3 +3,4 @@ uvicorn[standard]==0.54.0
 pymongo==4.19.0
 pydantic[email]==2.14.2
 pydantic-settings==2.16.2
+google-genai==2.34.0
