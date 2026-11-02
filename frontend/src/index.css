@@ -529,43 +529,51 @@ tr.archived td {
   background: var(--stage-accent);
 }
 
-/* Stage tokens from the kit: surface / text / accent */
+/* One gentle colour family per stage (surface / text / accent), each distinct.
+   Text on surface is at least 7:1 contrast. */
 .stage-applied {
-  --stage-surface: #eae7e4;
-  --stage-text: #514839;
-  --stage-accent: #685845;
+  --stage-surface: #e8eef4;
+  --stage-text: #2f4a63;
+  --stage-accent: #5b7c9c;
 }
 .stage-screening {
-  --stage-surface: #f3e7d8;
-  --stage-text: #724717;
-  --stage-accent: #8a5215;
+  --stage-surface: #f5ead9;
+  --stage-text: #6b4413;
+  --stage-accent: #b07a2a;
 }
 .stage-interview {
-  --stage-surface: #f1e1dd;
-  --stage-text: #6a3020;
-  --stage-accent: #8a3a24;
+  --stage-surface: #eeeaf6;
+  --stage-text: #463673;
+  --stage-accent: #7a66b3;
 }
 .stage-offer {
-  --stage-surface: #e5e9e4;
-  --stage-text: #404f3b;
-  --stage-accent: #4c6046;
+  --stage-surface: #e4efe1;
+  --stage-text: #2f5428;
+  --stage-accent: #5b8a4f;
 }
 .stage-rejected {
-  --stage-surface: #f7f0f0;
-  --stage-text: #682222;
-  --stage-accent: #872626;
+  --stage-surface: #f8e9e8;
+  --stage-text: #7a2626;
+  --stage-accent: #c0504d;
 }
 
+/* Archived tag: outlined neutral grey so it never reads as a stage colour */
 .tag {
   display: inline-block;
   margin-left: var(--space-2);
   font-size: 11px;
   font-weight: 600;
-  padding: 1px 8px;
+  padding: 0 8px;
+  border: 1px dashed var(--neutral-500);
   border-radius: 999px;
-  background: var(--neutral-100);
+  background: transparent;
   color: var(--text-secondary);
   vertical-align: middle;
+}
+
+.field-title {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* ---------- Alerts and empty states ---------- */

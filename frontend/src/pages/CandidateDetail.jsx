@@ -177,8 +177,14 @@ export default function CandidateDetail() {
           <section className="card" aria-labelledby="profile-heading">
             <h2 id="profile-heading">Profile</h2>
             <div className="field stage-field">
+              {/* Visible label sits above the row so the badge lines up with the dropdown itself;
+                  the dropdown keeps its own (visually hidden) accessible label. */}
+              <span className="field-title" aria-hidden="true">
+                Stage
+              </span>
               <div className="inline">
                 <Select
+                  hideLabel
                   label="Stage"
                   value={c.stage}
                   options={STAGES.map((stage) => ({ value: stage, label: stage }))}
