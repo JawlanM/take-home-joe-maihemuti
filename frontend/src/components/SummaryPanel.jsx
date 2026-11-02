@@ -60,7 +60,7 @@ export default function SummaryPanel({ summary, onRegenerate, regenerating }) {
     content = (
       <>
         <p className="alert error" role="alert">
-          The summary couldn&apos;t be generated: {summary.error || "unknown error"}.
+          Summary not generated. {summary.error || "Unknown error"}.
         </p>
         <button type="button" className="button" onClick={onRegenerate} disabled={regenerating}>
           {regenerating ? "Regenerating…" : "Regenerate summary"}

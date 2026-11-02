@@ -115,7 +115,7 @@ unknown id).
 | GET | `/health` | For Cloud Run |
 
 Summary generation is **synchronous** inside create/update (Gemini Flash takes a few seconds; timeout
-~15 s). If it fails, the candidate is **still saved** with `status: failed`. Tradeoff: simpler than a
+30 s). If it fails, the candidate is **still saved** with `status: failed`. Tradeoff: simpler than a
 background job + polling, at the cost of a slower save. Noted in write-up.
 
 Editing is kept (not in the brief's list) so a candidate who sends a new resume can be updated without
@@ -148,7 +148,7 @@ Junk-but-not-empty (C8) goes to the model, which is told to set `insufficient_in
   experience only.
 
 **Step 4. Call Gemini with a strict output schema (structural filtering, out).**
-`google-genai` SDK, current Flash model (name configurable via env), JSON output with a response schema
+`google-genai` SDK, `gemini-3.5-flash` (configurable via env), JSON output with a response schema
 matching `SummaryResult`, low temperature, output-token limit, timeout. Response parsed into a Pydantic
 model; anything that doesn't fit -> `failed`. Errors and timeouts -> `failed`, never a crash.
 
