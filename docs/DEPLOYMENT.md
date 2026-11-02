@@ -60,47 +60,47 @@ Hosting on GCP doesn't by itself decide how candidate data is handled by the mod
 
 ## Estimated monthly cost
 
-List prices in USD (checked 2 Nov 2026), converted at **1 USD ≈ 1.50 AUD**. Estimates, not a quote:
-regional rates (Sydney/Melbourne) can be somewhat higher than the US base rates.
+List prices in USD, checked on the providers' pricing pages on 2 Nov 2026, converted at
+**1 USD ≈ 1.50 AUD**. Estimates, not a quote.
 
-### Unit prices used
+### Unit prices used (Australian regions)
 
 | Service | List price | Free allowance |
 |---|---|---|
-| Gemini 3.5 Flash on Vertex AI | $1.50 per 1M input tokens, $9.00 per 1M output tokens | none |
-| Cloud Run (request-based) | $0.000024 per vCPU-second, $0.0000025 per GiB-second | 180,000 vCPU-s, 360,000 GiB-s, 2M requests per month |
-| MongoDB Atlas | M0: free (512 MB). M10: ~$0.08 per hour | M0 |
-| Firebase Hosting | Spark plan | 10 GB storage, 360 MB/day transfer (the built app is ~0.3 MB) |
-| Secret Manager | ~$0.06 per secret per month | small |
+| Gemini 3.5 Flash on Vertex AI, regional endpoint | $1.65 per 1M input tokens, $9.90 per 1M output tokens (output includes reasoning tokens; global endpoint is $1.50 / $9.00) | none |
+| Cloud Run, Sydney/Melbourne (Tier 2), request-based | $0.0000336 per vCPU-second and $0.0000035 per GiB-second while handling requests; idle min-instance $0.0000035 per vCPU-s and per GiB-s; $0.40 per 1M requests | 180,000 vCPU-s, 360,000 GiB-s, 2M requests per month (valued at Tier 1 prices, so ~128,000 vCPU-s in Tier 2) |
+| MongoDB Atlas | M0: free, 512 MB. M10: $0.08 per hour ("starts at $56.94/month") | M0 |
+| Firebase Hosting, Secret Manager, Artifact Registry, Cloud Build, Logging | cents at this scale | mostly covered by free tiers |
 
 ### The AI cost per summary
 
 A typical resume plus the system instruction is about **1,500 input tokens**; the JSON summary
 plus brief reasoning is about **500 output tokens**:
 
-- 1,500 × $1.50 / 1M = $0.00225
-- 500 × $9.00 / 1M = $0.00450
-- **≈ $0.007 per summary (about 1 cent AUD)**
+- 1,500 × $1.65 / 1M = $0.0025
+- 500 × $9.90 / 1M = $0.0050
+- **≈ $0.0074 per summary (about 1 cent AUD)**
 
-Worst case, a resume at the 20,000-character cap (~5,000 tokens) with the 2,048-token output
-cap: 5,000 × $1.50/1M + 2,048 × $9.00/1M ≈ **$0.026**. The input cap and the output cap are what
-bound the cost of any single call.
+Worst case, a resume at the 20,000-character cap (~5,000 tokens) with the 2,048-token output cap:
+5,000 × $1.65/1M + 2,048 × $9.90/1M ≈ **$0.029**. The input and output caps bound any single call.
 
 ### Monthly totals
 
 | Item | Demo (100 summaries) | Small team (~10 recruiters, 1,000 summaries) |
 |---|---|---|
-| Gemini on Vertex AI | 100 × $0.007 = **$0.70** | 1,000 × $0.007 = **$7** |
-| Cloud Run, scale to zero | **$0**: ~200 ms per request; even 60,000 requests ≈ 12,000 vCPU-s, well inside the free 180,000 | **$0 to $5** |
-| MongoDB Atlas | **$0** (M0) | **~$58**: M10 at $0.08/h × 730 h, plus backup storage |
-| Firebase Hosting | **$0** | **$0** |
-| Secret Manager, Artifact Registry, Cloud Build, Logging | **under $1** | **$1 to $3** |
-| **Total (USD)** | **about $1 to $2** | **about $66 to $75** |
-| **Total (AUD)** | **about $2 to $3** | **about $100 to $115** |
+| Gemini on Vertex AI | 100 × $0.0074 ≈ **$0.74** | 1,000 × $0.0074 ≈ **$7.40** |
+| Cloud Run, scale to zero | **$0**: ~200 ms per request, so even 60,000 requests ≈ 12,000 vCPU-s, inside the free allowance | **$0 to $5** |
+| MongoDB Atlas | **$0** (M0) | **~$57 to $58** (M10, $0.08/h × ~730 h), plus backup storage |
+| Firebase Hosting, secrets, registry, builds, logs | **under $1** | **$1 to $3** |
+| **Total (USD)** | **about $1 to $2** | **about $66 to $74** |
+| **Total (AUD)** | **about $2 to $3** | **about $100 to $110** |
 
-**Optional:** keeping one Cloud Run instance always warm (no cold starts) costs at most
-1 vCPU × 2,592,000 s × $0.000024 ≈ $62 plus 0.5 GiB × 2,592,000 s × $0.0000025 ≈ $3, so about
-**+$65 USD (≈ +$100 AUD) a month**. For an internal tool, a few seconds of cold start isn't worth that.
+**Optional:** one always-warm Cloud Run instance (no cold starts), billed at the idle min-instance
+rate while not serving: 1 vCPU × 2,592,000 s × $0.0000035 ≈ $9.07, plus 0.5 GiB × 2,592,000 s ×
+$0.0000035 ≈ $4.54, so about **+$14 USD (≈ +$21 AUD) a month**. Cheap enough to turn on if cold
+starts bother recruiters.
 
-**What drives the cost:** the dedicated database, not the AI. Even 10,000 summaries a month
-would be about $70 USD of Gemini. A budget alert at 50% and 90% of $150 AUD/month catches surprises.
+**What drives the cost:** the dedicated database, not the AI. Even 10,000 summaries a month is about
+$74 USD of Gemini. A budget alert at 50% and 90% of $150 AUD/month catches surprises.
+
+Atlas's M10 price is its headline rate; the Sydney region may be slightly higher (not confirmed).
