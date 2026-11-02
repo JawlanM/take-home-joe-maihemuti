@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api.js";
+import Avatar from "../components/Avatar.jsx";
 import StageBadge from "../components/StageBadge.jsx";
 import SummaryPanel from "../components/SummaryPanel.jsx";
 import { STAGES, formatDateTime } from "../constants.js";
@@ -122,11 +123,14 @@ export default function CandidateDetail() {
       </p>
 
       <div className="page-heading">
-        <div>
-          <h1>
-            {c.name} {c.archived && <span className="tag">Archived</span>}
-          </h1>
-          <p className="muted">{c.role}</p>
+        <div className="title-with-avatar">
+          <Avatar name={c.name} size="lg" />
+          <div>
+            <h1>
+              {c.name} {c.archived && <span className="tag">Archived</span>}
+            </h1>
+            <p className="muted">{c.role}</p>
+          </div>
         </div>
         <div className="actions">
           <Link to={`/candidates/${id}/edit`} className="button">

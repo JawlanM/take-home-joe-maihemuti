@@ -29,7 +29,7 @@ function Body({ summary }) {
       {summary.highlights?.length > 0 && (
         <>
           <h3>Experience highlights</h3>
-          <ul>
+          <ul className="highlights">
             {summary.highlights.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -71,8 +71,11 @@ export default function SummaryPanel({ summary, onRegenerate, regenerating }) {
 
   return (
     <section className="card" aria-labelledby="summary-heading">
-      <h2 id="summary-heading">AI summary</h2>
-      <p className="small muted">AI-generated from the resume and cover letter. May be inaccurate.</p>
+      <div className="card-heading">
+        <h2 id="summary-heading">Summary</h2>
+        <span className="ai-label">AI-generated</span>
+      </div>
+      <p className="small muted">Generated from the resume and cover letter. May be inaccurate.</p>
       {content}
     </section>
   );

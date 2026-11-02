@@ -2,10 +2,31 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "../api.js";
+import Avatar from "../components/Avatar.jsx";
 import StageBadge from "../components/StageBadge.jsx";
 import { STAGES, formatDate } from "../constants.js";
 
 const DEFAULTS = { stage: "", role: "", sort: "created", order: "desc", include_archived: "false" };
+
+function LoadingTable() {
+  return (
+    <div className="table-wrap" aria-busy="true" aria-label="Loading candidates">
+      <table>
+        <tbody>
+          {[0, 1, 2, 3, 4].map((row) => (
+            <tr key={row}>
+              {["40%", "60%", "30%", "40%", "50%"].map((width, col) => (
+                <td key={col}>
+                  <span className="skeleton" style={{ width }} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function CandidateList() {
   // Filters live in the URL, so they survive refresh and the back button.
@@ -102,13 +123,26 @@ export default function CandidateList() {
         </p>
       )}
 
-      {!error && candidates === null && <p className="muted">Loading candidates…</p>}
+      {!error && candidates === null && <LoadingTable />}
 
-      {candidates?.length === 0 && (
-        <p className="empty">
-          {isFiltered ? "No candidates match these filters." : "No candidates yet. Add the first one."}
-        </p>
-      )}
+      {candidates?.length === 0 &&
+        (isFiltered ? (
+          <div className="empty">
+            <p className="empty-title">No candidates found</p>
+            <p className="muted">Try a different stage or role, or clear the filters to see the full pipeline.</p>
+            <button type="button" className="button" onClick={() => setSearchParams({})}>
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="empty">
+            <p className="empty-title">No candidates yet</p>
+            <p className="muted">Add a candidate to start tracking your pipeline.</p>
+            <Link to="/candidates/new" className="button primary">
+              Add candidate
+            </Link>
+          </div>
+        ))}
 
       {candidates?.length > 0 && (
         <div className="table-wrap">
@@ -122,12 +156,17 @@ export default function CandidateList() {
                 <th scope="col">Date added</th>
               </tr>
             </thead>
-            <tbody>
-              {candidates.map((c) => (
-                <tr key={c.id} className={c.archived ? "archived" : undefined}>
+            <tbody className="stagger">
+              {candidates.map((c, index) => (
+                <tr key={c.id} className={c.archived ? "archived" : undefined} style={{ "--i": index }}>
                   <td>
-                    <Link to={`/candidates/${c.id}`}>{c.name}</Link>
-                    {c.archived && <span className="tag">Archived</span>}
+                    <div className="name-cell">
+                      <Avatar name={c.name} />
+                      <span>
+                        <Link to={`/candidates/${c.id}`}>{c.name}</Link>
+                        {c.archived && <span className="tag">Archived</span>}
+                      </span>
+                    </div>
                   </td>
                   <td>{c.role}</td>
                   <td>

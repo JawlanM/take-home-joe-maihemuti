@@ -9,6 +9,7 @@ export default function App() {
     <>
       <header className="site-header">
         <Link to="/" className="brand">
+          <span className="brand-mark" aria-hidden="true" />
           Candidate Tracker
         </Link>
       </header>
