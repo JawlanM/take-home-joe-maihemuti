@@ -10,6 +10,11 @@ AI-generated summary of each candidate's skills and experience.
 
 More detail: [design](docs/DESIGN.md) · [write-up](docs/WRITEUP.md) · [deployment design](docs/DEPLOYMENT.md) · [learning log](docs/LEARNING_LOG.md)
 
+> **To see the AI summaries, add a free Gemini key** (about 2 minutes; steps under
+> [Run it](#run-it-docker-recommended)). The app runs without one, but summaries then show as
+> "turned off". My own key isn't included because this repo is public. I'm also happy to demo
+> the AI feature live.
+
 ## Screenshots
 
 | Candidate list | Injection attempt flagged |
