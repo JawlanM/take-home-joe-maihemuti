@@ -81,3 +81,7 @@ injection resumes against real Gemini.
    roles, other archived candidates are auto-deleted after a retention period, and deletes get a
    short undo window.
 6. **Pipeline board:** kanban with drag between stages, stage counts, bulk actions, days in stage.
+7. **Candidate updates:** notify applicants when their application moves (received, under review,
+   next round, outcome), with AI-drafted next-round or rejection messages from the stage, role and
+   notes. Drafts are always reviewed and sent by a recruiter, never sent automatically, and never
+   include the AI summary or private notes.
