@@ -23,7 +23,7 @@ API key stays inside the project's Secret Manager.
 | Component | Service | Why |
 |---|---|---|
 | Frontend | **Firebase Hosting** | Static files on a global CDN with HTTPS; free tier covers this. |
-| Backend API | **Cloud Run** | Runs the existing Dockerfile unchanged, scales to zero when idle, HTTPS by default. |
+| Backend API | **Cloud Run** | Runs the existing Dockerfile unchanged, can scale to zero when idle (no minimum instance), HTTPS by default. |
 | Container images | **Artifact Registry** | Where Cloud Build pushes images for Cloud Run. |
 | Build | **Cloud Build** | Builds the backend image from the repo on each push to `main`. |
 | Database | **MongoDB Atlas on GCP** (Melbourne/Sydney region) | GCP has no native MongoDB; Atlas runs it inside Google's network, near users. |
@@ -60,8 +60,12 @@ Hosting on GCP doesn't by itself decide how candidate data is handled by the mod
 
 ## Estimated monthly cost
 
-List prices in USD, checked on the providers' pricing pages on 2 Nov 2026, converted at
-**1 USD ≈ 1.50 AUD**. Estimates, not a quote.
+**These are indicative AUD estimates, not a quote.** They're built from USD list prices on the
+providers' pricing pages (checked 2 Nov 2026) at an assumed **1 USD ≈ 1.50 AUD**, and will vary with
+region, exchange rate, actual usage, and any later price changes.
+
+Assumptions: Australian regions; ~1,500 input and ~500 output tokens per summary; ~200 ms of CPU per
+API request; Cloud Run with no minimum instance unless stated; prices before tax.
 
 ### Unit prices used (Australian regions)
 
@@ -90,7 +94,7 @@ Worst case, a resume at the 20,000-character cap (~5,000 tokens) with the 2,048-
 |---|---|---|
 | Gemini on Vertex AI | 100 × $0.0074 ≈ **$0.74** | 1,000 × $0.0074 ≈ **$7.40** |
 | Cloud Run, scale to zero | **$0**: ~200 ms per request, so even 60,000 requests ≈ 12,000 vCPU-s, inside the free allowance | **$0 to $5** |
-| MongoDB Atlas | **$0** (M0) | **~$57 to $58** (M10, $0.08/h × ~730 h), plus backup storage |
+| MongoDB Atlas | **$0** (M0) | **~$57 to $58** (M10, $0.08/h × ~730 h); backups extra |
 | Firebase Hosting, secrets, registry, builds, logs | **under $1** | **$1 to $3** |
 | **Total (USD)** | **about $1 to $2** | **about $66 to $74** |
 | **Total (AUD)** | **about $2 to $3** | **about $100 to $110** |
@@ -103,4 +107,6 @@ starts bother recruiters.
 **What drives the cost:** the dedicated database, not the AI. Even 10,000 summaries a month is about
 $74 USD of Gemini. A budget alert at 50% and 90% of $150 AUD/month catches surprises.
 
-Atlas's M10 price is its headline rate; the Sydney region may be slightly higher (not confirmed).
+Atlas's M10 price is its headline rate: the Sydney region may be slightly higher (not confirmed),
+and cloud backups and data transfer are billed on top. With a minimum Cloud Run instance, the
+service is billed for idle time too, not only while handling requests (the optional row above).
